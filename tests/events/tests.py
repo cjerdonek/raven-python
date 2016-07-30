@@ -17,6 +17,15 @@ class ExceptionTest(TestCase):
         def transform_expected(self, expected):
             return expected[:1]
 
+    def get_values(self):
+        c = Client()
+        event = ExceptionEvent(c)
+        result = event.capture()
+        info = result['exception']
+        values = info['values']
+
+        return values
+
     def check_capture(self, expected):
         """
         Check the return value of capture().
@@ -24,16 +33,22 @@ class ExceptionTest(TestCase):
         Args:
           expected: the expected "type" values.
         """
-        c = Client()
-        event = ExceptionEvent(c)
-        result = event.capture()
-        info = result['exception']
-        values = info['values']
-
+        values = self.get_values()
         type_names = [value['type'] for value in values]
         expected = self.transform_expected(expected)
 
         self.assertEqual(type_names, expected)
+
+    def test_stacktrace(self):
+        try:
+            raise ValueError()
+        except Exception:
+            values = self.get_values()
+            value, = values
+            stacktrace = value['stacktrace']
+            frames = stacktrace['frames']
+            frame, = frames
+            raise Exception(sorted(frame.keys()))
 
     def test_simple(self):
         try:
